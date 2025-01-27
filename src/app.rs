@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
-
+use procfs::Uptime;
 use cosmic::app::{Core, Task};
 use cosmic::iced::platform_specific::shell::wayland::commands::popup::{destroy_popup, get_popup};
 use cosmic::iced::window::Id;
-use cosmic::widget::{Column, Text};
-use cosmic::{Application, Element};
+use cosmic::widget::{Button, Column, Text, MouseArea};
+use cosmic::{Application, Element, Theme};
 
 #[derive(Default)]
 pub struct UptimeIndicator {
@@ -46,12 +45,17 @@ impl Application for UptimeIndicator {
         (app, Task::none())
     }
 
+
     fn view(&self) -> Element<Self::Message> {
-        self.core
+        // Cria um botão interativo com texto
+        let button = self
+            .core
             .applet
-            .icon_button("time-symbolic")
-            .on_press(Message::TogglePopup)
-            .into()
+            .icon_button("Click Me")
+            .on_press(Message::TogglePopup); // Ação ao clicar no botão
+
+        // Torna o botão clicável no painel
+        MouseArea::new(button).into()
     }
 
     fn view_window(&self, _id: Id) -> Element<Self::Message> {
@@ -98,14 +102,17 @@ impl Application for UptimeIndicator {
 }
 
 fn calculate_uptime() -> String {
-    let uptime = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or(Duration::from_secs(0));
-    let seconds = uptime.as_secs();
-    format!(
-        "{}h {}m {}s",
-        seconds / 3600,
-        (seconds % 3600) / 60,
-        seconds % 60
-    )
+    // Obtém o uptime do sistema
+    if let Ok(uptime) = Uptime::new() {
+        let seconds = uptime.uptime as u64; // `uptime` retorna um f64, convertendo para u64
+        format!(
+            "{}h {}m {}s",
+            seconds / 3600,
+            (seconds % 3600) / 60,
+            seconds % 60
+        )
+    } else {
+        "Failed to retrieve uptime".into()
+    }
 }
+

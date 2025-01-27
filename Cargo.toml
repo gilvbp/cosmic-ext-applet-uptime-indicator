@@ -1,5 +1,5 @@
 [package]
-name = "cosmic-applet-uptime-indicator"
+name = "cosmic-ext-applet-uptime-indicator"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.80"
@@ -9,7 +9,7 @@ futures-util = "0.3.30"
 i18n-embed-fl = "0.9.1"
 rust-embed = "8.3.0"
 serde = "1.0.209"
-
+procfs = "0.14"
 
 
 i18n-embed = { version = "0.15", features = [
@@ -18,26 +18,7 @@ i18n-embed = { version = "0.15", features = [
 ] }
 
 
-derivative = "2"
-os_pipe = "1"
-thiserror = "1"
-paste = "1"
-directories = "5"
-anyhow = "1"
-chrono = { version = "0.4", default-features = false, features = ["now"] }
-mime = "0.3"
 
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = [
-    "fmt",
-    "env-filter",
-    "ansi",
-] }
-tracing-journald = "0.3"
-constcat = "0.5"
-nucleo = "0.5"
-futures = "0.3"
-include_dir = "0.7.4"
 [dependencies.libcosmic]
 git = "https://github.com/pop-os/libcosmic"
 default-features = false
