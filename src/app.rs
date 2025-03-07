@@ -4,21 +4,20 @@ use procfs::Uptime;
 use cosmic::app::{Core, Task};
 use cosmic::iced::platform_specific::shell::wayland::commands::popup::{destroy_popup, get_popup};
 use cosmic::iced::window::Id;
-use cosmic::widget::{Button, Column, Text, MouseArea};
-use cosmic::{Application, Element, Theme};
+use cosmic::widget::{ Column, Text, MouseArea};
+use cosmic::{Application, Element};
 
 #[derive(Default)]
 pub struct UptimeIndicator {
     core: Core,
     popup: Option<Id>,
     uptime: String,
+    short_uptime:String
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
     TogglePopup,
-    PopupClosed(Id),
-    UpdateUptime,
 }
 
 impl Application for UptimeIndicator {
@@ -40,23 +39,25 @@ impl Application for UptimeIndicator {
             core,
             popup: None,
             uptime: calculate_uptime(),
+            short_uptime: short_uptime(),
         };
 
         (app, Task::none())
     }
 
-
     fn view(&self) -> Element<Self::Message> {
-        // Cria um botão interativo com texto
         let button = self
             .core
             .applet
-            .icon_button("Click Me")
-            .on_press(Message::TogglePopup); // Ação ao clicar no botão
+            .icon_button((&self.short_uptime).as_ref()) // passe diretamente uma String
+            .on_press(Message::TogglePopup);
 
-        // Torna o botão clicável no painel
         MouseArea::new(button).into()
     }
+
+
+
+
 
     fn view_window(&self, _id: Id) -> Element<Self::Message> {
         self.core
@@ -73,6 +74,9 @@ impl Application for UptimeIndicator {
     fn update(&mut self, message: Self::Message) -> Task<Self::Message> {
         match message {
             Message::TogglePopup => {
+                self.uptime = calculate_uptime();
+                self.short_uptime = short_uptime();
+
                 return if let Some(p) = self.popup.take() {
                     destroy_popup(p)
                 } else {
@@ -88,16 +92,9 @@ impl Application for UptimeIndicator {
                     get_popup(popup_settings)
                 };
             }
-            Message::PopupClosed(id) => {
-                if self.popup.as_ref() == Some(&id) {
-                    self.popup = None;
-                }
-            }
-            Message::UpdateUptime => {
-                self.uptime = calculate_uptime();
-            }
+
         }
-        Task::none()
+
     }
 }
 
@@ -116,3 +113,13 @@ fn calculate_uptime() -> String {
     }
 }
 
+fn short_uptime() -> String {
+    if let Ok(uptime) = Uptime::new() {
+        let total_minutes = uptime.uptime as u64 / 60;
+        let days = total_minutes / 1440;
+        let hours = (total_minutes % 1440) / 60;
+        format!("{}D{:02}h", days, hours)
+    } else {
+        "N/A".into()
+    }
+}
