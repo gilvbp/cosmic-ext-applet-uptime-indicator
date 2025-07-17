@@ -1,23 +1,23 @@
-// SPDX-License-Identifier: GPL-3.0-only
+use std::time::Duration;
 
+// SPDX-License-Identifier: GPL-3.0-only
 use procfs::Uptime;
 use cosmic::app::{Core, Task};
-use cosmic::iced::platform_specific::shell::wayland::commands::popup::{destroy_popup, get_popup};
-use cosmic::iced::window::Id;
-use cosmic::widget::{ Column, Text, MouseArea};
 use cosmic::{Application, Element};
+use cosmic::widget::{Row, Text, MouseArea};
+use cosmic::iced::{time, Subscription, Alignment};
+
 
 #[derive(Default)]
 pub struct UptimeIndicator {
     core: Core,
-    popup: Option<Id>,
     uptime: String,
     short_uptime:String
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    TogglePopup,
+    Tick,
 }
 
 impl Application for UptimeIndicator {
@@ -37,7 +37,6 @@ impl Application for UptimeIndicator {
     fn init(core: Core, _flags: Self::Flags) -> (Self, Task<Self::Message>) {
         let app = UptimeIndicator {
             core,
-            popup: None,
             uptime: calculate_uptime(),
             short_uptime: short_uptime(),
         };
@@ -45,58 +44,38 @@ impl Application for UptimeIndicator {
         (app, Task::none())
     }
 
+
     fn view(&self) -> Element<Self::Message> {
-        let button = self
-            .core
-            .applet
-            .icon_button((&self.short_uptime).as_ref()) // passe diretamente uma String
-            .on_press(Message::TogglePopup);
+        // 1) Row numa linha só, centralizando o Text
+        let row = Row::new()
+            .align_y(Alignment::Center)       // ✅ alinha verticalmente ao centro
+            .push(
+                Text::new(&self.short_uptime)
+                    .size(14),
+            );
 
-        MouseArea::new(button).into()
-    }
-
-
-
-
-
-    fn view_window(&self, _id: Id) -> Element<Self::Message> {
-        self.core
-            .applet
-            .popup_container(
-                Column::new()
-                    .push(Text::new("Uptime"))
-                    .push(Text::new(&self.uptime))
-                    .padding(10),
-            )
+        // 4) Se quiser clique:
+        MouseArea::new(row)
+            .on_press(Message::Tick)
             .into()
     }
 
-    fn update(&mut self, message: Self::Message) -> Task<Self::Message> {
+    fn update(&mut self, message: Message) -> Task<Self::Message> {
         match message {
-            Message::TogglePopup => {
+            Message::Tick => {
+                // recalcula e força o redraw
                 self.uptime = calculate_uptime();
                 self.short_uptime = short_uptime();
-
-                return if let Some(p) = self.popup.take() {
-                    destroy_popup(p)
-                } else {
-                    let new_id = Id::unique();
-                    self.popup.replace(new_id);
-                    let popup_settings = self.core.applet.get_popup_settings(
-                        self.core.main_window_id().unwrap(),
-                        new_id,
-                        None,
-                        None,
-                        None,
-                    );
-                    get_popup(popup_settings)
-                };
+                Task::none()
             }
-
         }
-
     }
+    fn subscription(&self) -> Subscription<Message> {
+        time::every(Duration::from_secs(60)).map(|_| Message::Tick)
+    }
+
 }
+
 
 fn calculate_uptime() -> String {
     // Obtém o uptime do sistema
