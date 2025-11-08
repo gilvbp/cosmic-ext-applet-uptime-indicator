@@ -4,9 +4,8 @@ use std::time::Duration;
 use procfs::Uptime;
 use cosmic::app::{Core, Task};
 use cosmic::{Application, Element};
-use cosmic::widget::{Row, Text, MouseArea};
-use cosmic::iced::{time, Subscription, Alignment};
-
+use cosmic::widget::{Row, Container, Text, MouseArea};
+use cosmic::iced::{time, Subscription, Alignment, Length};
 
 #[derive(Default)]
 pub struct UptimeIndicator {
@@ -51,14 +50,19 @@ impl Application for UptimeIndicator {
             .align_y(Alignment::Center)       // ✅ alinha verticalmente ao centro
             .push(
                 Text::new(&self.short_uptime)
-                    .size(14),
+                    .size(15),
             );
 
-        // 4) Se quiser clique:
-        MouseArea::new(row)
+        let boxed = Container::new(row)
+            .padding(1)
+            .height(Length::Shrink)
+            .width(Length::Shrink);
+
+        MouseArea::new(boxed)
             .on_press(Message::Tick)
             .into()
     }
+
 
     fn update(&mut self, message: Message) -> Task<Self::Message> {
         match message {
